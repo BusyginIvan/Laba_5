@@ -10,15 +10,16 @@ import java.util.HashSet;
  * @see project.commands.command_map.CommandMap
  */
 public class ExecuteScript implements ICommand {
-    private static HashSet<File> openedScripts;
     CommandMap commandMap;
+    private int OpenedScriptsNumber;
+    private final int MaxOpenedScripts = 100;
 
     /**
      * Команда будет выполнять команды из переданного в этот конструктор перечня.
      * @param commandMap набор выпоняемых команд.
      */
     public ExecuteScript(CommandMap commandMap) {
-        openedScripts = new HashSet<>();
+        OpenedScriptsNumber = 0;
         this.commandMap = commandMap;
     }
 
@@ -33,9 +34,9 @@ public class ExecuteScript implements ICommand {
         File file = new File(arguments[0]);
         if (!file.exists())
             throw new IllegalArgumentException("Ошибка! Указанного файла не существует.");
-        if (openedScripts.contains(file))
-            throw new IllegalArgumentException("Пришлось пропустить вложенный вызов скрипта во избежание бесконечного цикла команд.");
-        openedScripts.add(file);
+        if (OpenedScriptsNumber >= MaxOpenedScripts)
+            throw new IllegalArgumentException("Пришлось пропустить вложенный вызов скрипта, так как был достигнут предельный уровень вложенности.");
+        OpenedScriptsNumber++;
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
             String line;
@@ -55,7 +56,7 @@ public class ExecuteScript implements ICommand {
         } catch (IOException e) {
             System.out.println("Чёт поток не закрылся...");
         }
-        openedScripts.remove(file);
+        OpenedScriptsNumber--;
     }
 
     /**
