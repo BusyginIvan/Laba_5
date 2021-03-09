@@ -2,8 +2,6 @@ package project.products.product;
 
 import com.sun.istack.internal.NotNull;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlType;
 import java.util.ArrayList;
 
 /**
@@ -11,7 +9,6 @@ import java.util.ArrayList;
  * @see Product
  * @see Location
  */
-@XmlType(propOrder = { "name", "height", "weight", "passportID", "location" }, name = "person")
 public class Person implements Comparable<Person> {
     private String name;
     private Float height;
@@ -82,7 +79,6 @@ public class Person implements Comparable<Person> {
      * Возвращает имя.
      * @return имя.
      */
-    @XmlAttribute
     public String getName() {
         return name;
     }

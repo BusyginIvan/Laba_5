@@ -3,14 +3,8 @@ package project.products.product_collection;
 import com.sun.istack.internal.NotNull;
 import project.products.product.Product;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.time.LocalDate;
 import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -18,7 +12,6 @@ import java.util.Iterator;
  * @see java.time.LocalDate
  * @see Product
  */
-@XmlRootElement
 public class ProductCollection implements IProductCollection {
     private ArrayDeque<Product> arrayDeque;
     private LocalDate initializationDate;
@@ -72,8 +65,6 @@ public class ProductCollection implements IProductCollection {
      * Возвращает ссылку на коллекцию товаров.
      * @return коллекция (двусторонняя очередь).
      */
-    @XmlElementWrapper(name = "project/products")
-    @XmlElement(name = "product")
     public ArrayDeque<Product> getArrayDeque() {
         return arrayDeque;
     }
@@ -91,8 +82,6 @@ public class ProductCollection implements IProductCollection {
      * Возвращает дату инициализации.
      * @return объект LocalDate, представляющий дату создания.
      */
-    @XmlElement
-    @XmlJavaTypeAdapter(DateAdapter.class)
     public LocalDate getInitializationDate() {
         return initializationDate;
     }

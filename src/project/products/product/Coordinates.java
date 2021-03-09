@@ -2,14 +2,10 @@ package project.products.product;
 
 import com.sun.istack.internal.NotNull;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlType;
-
 /**
  * Класс с парой координат x и y.
  * @see Product
  */
-@XmlType( name = "coordinates")
 public class Coordinates implements Comparable<Coordinates> {
     private Float x;
     private double y;
@@ -36,7 +32,6 @@ public class Coordinates implements Comparable<Coordinates> {
      * Возвращает координату x.
      * @return вещественная координата.
      */
-    @XmlAttribute
     public Float getX() {
         return x;
     }
@@ -45,7 +40,6 @@ public class Coordinates implements Comparable<Coordinates> {
      * Возвращает координату y.
      * @return вещественная координата.
      */
-    @XmlAttribute
     public double getY() {
         return y;
     }

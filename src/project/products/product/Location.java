@@ -2,14 +2,10 @@ package project.products.product;
 
 import com.sun.istack.internal.NotNull;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlType;
-
 /**
  * Класс с информацией о месте нахождения.
  * @see Person
  */
-@XmlType(propOrder = { "x", "y", "z", "name" }, name = "location")
 public class Location {
     private float x;
     private Integer y;
@@ -44,7 +40,6 @@ public class Location {
      * Возвращает название локации.
      * @return строковое название.
      */
-    @XmlAttribute
     public String getName() {
         return name;
     }

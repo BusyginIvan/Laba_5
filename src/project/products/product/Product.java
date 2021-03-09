@@ -2,10 +2,7 @@ package project.products.product;
 
 import com.sun.istack.internal.NotNull;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
@@ -17,7 +14,6 @@ import java.util.Arrays;
  * @see Coordinates
  * @see Location
  */
-@XmlType(propOrder = { "name", "coordinates", "creationDate", "price", "unitOfMeasure", "owner" }, name = "product")
 public class Product implements Comparable<Product> {
     private long ID;
     private String name;
@@ -82,7 +78,6 @@ public class Product implements Comparable<Product> {
      * Возвращает наименование товара.
      * @return название товара.
      */
-    @XmlAttribute
     public String getName() {
         return name;
     }
@@ -100,7 +95,6 @@ public class Product implements Comparable<Product> {
      * @return дата и время производства.
      * @see DateAdapter
      */
-    @XmlJavaTypeAdapter(DateAdapter.class)
     public LocalDateTime getCreationDate() {
         return creationDate;
     }
