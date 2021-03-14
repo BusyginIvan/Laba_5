@@ -1,9 +1,13 @@
 package project.products.product_collection;
 
 import com.sun.istack.internal.NotNull;
+import project.products.InvalidTagException;
 import project.products.product.Product;
+import project.parsing.tags.ParentTag;
+import project.parsing.tags.TextTag;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 
@@ -22,6 +26,52 @@ public class ProductCollection implements IProductCollection {
     public ProductCollection() {
         arrayDeque = new ArrayDeque<>();
         initializationDate = LocalDate.now();
+    }
+
+    /**
+     * Создаёт коллекцию, получая данные из тега.
+     * @param productCollectionTag тег, описывающий коллекцию товаров.
+     * @exception InvalidTagException если тег не содержит необходимых вложенных тегов или в них некорректные данные.
+     */
+    public ProductCollection(ParentTag productCollectionTag) {
+        date: try {
+            String name = "initializationDate";
+            for (TextTag element : productCollectionTag.getTextTags())
+                if (element.getName().equals(name)) {
+                    setInitializationDate(LocalDate.parse(element.getContent()));
+                    break date;
+                }
+            throw new InvalidTagException(this.getClass(), "Отсутствует тег для поля " + name + ".");
+        } catch (DateTimeParseException e) {
+            throw new InvalidTagException(this.getClass(), "Неверно записана дата инициализации.");
+        }
+
+        arrayDeque = new ArrayDeque<>();
+        for (ParentTag tagInProductCollection: productCollectionTag.getParentTags())
+            if (tagInProductCollection.getName().equals("products")) {
+                for (ParentTag tagInProducts: tagInProductCollection.getParentTags())
+                    if (tagInProducts.getName().equals("product")) {
+                        try {
+                            arrayDeque.add(new Product(tagInProducts));
+                        } catch (InvalidTagException e) {}
+                    }
+                return;
+            }
+    }
+
+    /**
+     * Метод для получения тега, описывающего эту коллекцию.
+     * @return тег productCollection, содержащий теги initializationDate и products, в которых, в свою очередь, содержатся дата
+     * инициализации и теги товаров соответственно.
+     */
+    public ParentTag getTag() {
+        ParentTag productCollectionTag = new ParentTag("productCollection");
+        productCollectionTag.addTextTag(new TextTag("initializationDate", initializationDate.toString()));
+        ParentTag productsTag = new ParentTag("products");
+        for (Product product: arrayDeque)
+            productsTag.addParentTag(product.getTag());
+        productCollectionTag.addParentTag(productsTag);
+        return productCollectionTag;
     }
 
     /**

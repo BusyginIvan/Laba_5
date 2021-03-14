@@ -1,8 +1,8 @@
 package project.commands.command_map;
 
-import project.commands.command.*;
+import project.commands.commands.*;
 import project.products.product_collection.IProductCollection;
-import project.save_and_load.ISaver;
+import project.parsing.save.ISaver;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,18 +43,18 @@ public class CommandMap implements ICommandMap {
     /**
      * Выполняет строковую команду.
      * @param str строка с командой и аргументами.
-     * @exception IllegalArgumentException бросает, если получена несуществующая команда.
+     * @exception CommandException если получена несуществующая команда или переданы неверные аргументы.
      */
-    public void execute(String str) throws IllegalArgumentException {
+    public void execute(String str) throws CommandException {
         System.out.println();
         String[] words = str.split("\\s+");
         if (words.length == 0)
-            throw new IllegalArgumentException("Пустая строка - не команда!");
+            throw new CommandException("Пустая строка - не команда!");
         if (commands.containsKey(words[0])) {
             if (words.length > 1)
                 commands.get(words[0]).execute(Arrays.copyOfRange(words, 1, words.length));
             else
                 commands.get(words[0]).execute(null);
-        } else throw new IllegalArgumentException("Такой команды не существует!");
+        } else throw new CommandException("Такой команды не существует!");
     }
 }

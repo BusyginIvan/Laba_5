@@ -1,7 +1,7 @@
 package project.products;
 
 import com.sun.istack.internal.NotNull;
-import project.MyReader;
+import project.ConsoleReader;
 import project.products.product.*;
 
 import java.io.IOException;
@@ -56,7 +56,7 @@ public class ElementBuilder {
         while (true) {
             System.out.print(invitationToEnter + ": ");
             try {
-                setter.accept(MyReader.readLine());
+                setter.accept(ConsoleReader.readLine());
                 break;
             } catch (IOException e) {
                 System.out.print("Что-то пошло не так.");

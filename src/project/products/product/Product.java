@@ -1,10 +1,15 @@
 package project.products.product;
 
 import com.sun.istack.internal.NotNull;
+import project.products.InvalidTagException;
+import project.parsing.tags.ParentTag;
+import project.parsing.tags.TextTag;
 
-import javax.xml.bind.annotation.adapters.XmlAdapter;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Класс, хранящий в себе информацию о некотором товаре.
@@ -28,6 +33,86 @@ public class Product implements Comparable<Product> {
     {
         ID = nextID++;
         creationDate = LocalDateTime.now();
+    }
+
+    /**
+     * Пустой конструктор. Используется в {@link project.products.ElementBuilder}.
+     */
+    public Product() { }
+
+    /**
+     * Получает значения характеристик товара из тега.
+     * @param productTag тег с вложенными тегами name, coordinates, creationDate, price и, возможно, unitOfMeasure и owner.
+     * @exception InvalidTagException если тег не содержит необходимых вложенных тегов или если в них некорректные данные.
+     */
+    public Product(ParentTag productTag) {
+        try {
+            name: {
+                for (String key : productTag.getArguments().keySet())
+                    if (key.equals("name")) {
+                        setName(productTag.getArguments().get(key));
+                        break name;
+                    }
+                throw new InvalidTagException(this.getClass(), "У тега нет аргумента имени.");
+            }
+            String fieldName;
+            setCoordinates(new Coordinates(requireNonNull(getNestedParentTag(productTag, (fieldName = "coordinates")), fieldName)));
+            try {
+                setCreationDate(LocalDateTime.parse(requireNonNull(getTextFromNestedTag(productTag, (fieldName = "creationDate")), fieldName)));
+            } catch (DateTimeParseException e) {
+                throw new InvalidTagException(this.getClass(), "Неверно записана дата производства.");
+            }
+            try {
+                setPrice(Double.valueOf(requireNonNull(getTextFromNestedTag(productTag, (fieldName = "price")), fieldName)));
+            } catch (NumberFormatException e) {
+                throw new InvalidTagException(this.getClass(), "Цена записана некорректно.");
+            }
+            for (TextTag element: productTag.getTextTags())
+                if (element.getName().equals("unitOfMeasure")) {
+                    setUnitOfMeasure(UnitOfMeasure.valueOf(element.getContent()));
+                    break;
+                }
+            for (ParentTag element: productTag.getParentTags())
+                if (element.getName().equals("owner")) {
+                    setOwner(new Person(element));
+                    break;
+                }
+        } catch (IllegalArgumentException e) {
+            throw new InvalidTagException(e.getMessage());
+        } catch (NullPointerException e) {
+            throw new InvalidTagException(this.getClass(), "Отсутствует тег для поля " + e.getMessage() + ".");
+        }
+    }
+
+    private static String getTextFromNestedTag(ParentTag tag, String name) {
+        for (TextTag element: tag.getTextTags())
+            if (element.getName().equals(name))
+                return element.getContent();
+        return null;
+    }
+
+    private static ParentTag getNestedParentTag(ParentTag tag, String tagName) {
+        for (ParentTag element: tag.getParentTags())
+            if (element.getName().equals(tagName))
+                return element;
+        return null;
+    }
+
+    /**
+     * Метод для получения тега, описывающего этот товар.
+     * @return тег product, содержащий теги, соответствующие каждому непустому полю класса.
+     */
+    public ParentTag getTag() {
+        ParentTag parentTag = new ParentTag("product");
+        parentTag.addArgument("name", name);
+        parentTag.addParentTag(coordinates.getTag());
+        parentTag.addTextTag(new TextTag("creationDate", creationDate.toString()));
+        parentTag.addTextTag(new TextTag("price", price + ""));
+        if (!(unitOfMeasure == null))
+            parentTag.addTextTag(new TextTag("unitOfMeasure", unitOfMeasure.toString()));
+        if (!(owner == null))
+            parentTag.addParentTag(owner.getTag());
+        return parentTag;
     }
 
     /**
@@ -67,6 +152,26 @@ public class Product implements Comparable<Product> {
     }
 
     /**
+     * Задаёт координаты товара.
+     * @param coordinates объект класса Coordinates, с новой парой координат x и y.
+     */
+    public void setCoordinates(Coordinates coordinates) throws IllegalArgumentException {
+        if (coordinates == null)
+            throw new IllegalArgumentException("null - недопустимое значение координат товара!");
+        this.coordinates = coordinates;
+    }
+
+    /**
+     * Задаёт дату и время создания товара.
+     * @param creationDate объект, представляющий дату и время производства.
+     */
+    public void setCreationDate(LocalDateTime creationDate) {
+        if (creationDate == null)
+            throw new IllegalArgumentException("null - недопустимое значение даты производства товара!");
+        this.creationDate = creationDate;
+    }
+
+    /**
      * Возвращает уникальный номер товара.
      * @return номер товара.
      */
@@ -93,7 +198,6 @@ public class Product implements Comparable<Product> {
     /**
      * Возвращает объект класса, представляющего время создания товара.
      * @return дата и время производства.
-     * @see DateAdapter
      */
     public LocalDateTime getCreationDate() {
         return creationDate;
@@ -124,22 +228,6 @@ public class Product implements Comparable<Product> {
     }
 
     /**
-     * Задаёт координаты товара.
-     * @param coordinates объект класса Coordinates, с новой парой координат x и y.
-     */
-    public void setCoordinates(Coordinates coordinates) {
-        this.coordinates = coordinates;
-    }
-
-    /**
-     * Задаёт дату и время создания товара.
-     * @param creationDate объект, представляющий дату и время производства.
-     */
-    public void setCreationDate(LocalDateTime creationDate) {
-        this.creationDate = creationDate;
-    }
-
-    /**
      * Выводит информацию о продукте в стандортный поток.
      * @param indent отступ от левого края (число пробелов).
      */
@@ -150,8 +238,8 @@ public class Product implements Comparable<Product> {
         System.out.println(s + "Продукт №" + ID + ":\n" +
                 s + " Наименование: " + name + "\n" +
                 s + " Координаты:" + "\n" +
-                s + " x: " + coordinates.getX() + "\n" +
-                s + " y: " + coordinates.getY() + "\n" +
+                s + "  x: " + coordinates.getX() + "\n" +
+                s + "  y: " + coordinates.getY() + "\n" +
                 s + " Дата создания: " + creationDate.toString().replace("T", "  ") + "\n" +
                 s + " Цена: " + price + "\n" +
                 s + " Единица измерения: " + (unitOfMeasure == null ? "-" : unitOfMeasure) + "\n" +
@@ -166,31 +254,5 @@ public class Product implements Comparable<Product> {
     @Override
     public int compareTo(Product other) {
         return (int) (price - other.getPrice());
-    }
-}
-
-/**
- * Этот класс предоставляет для JAXB возможность конвертировать объект LocalDateTime в строковое представление и обратно.
- */
-class DateAdapter extends XmlAdapter<String, LocalDateTime> {
-    /**
-     * Преобразует строку в объект даты и времени.
-     * @param s строковое представление даты и времени (например, 2021-02-21T20:43:16.367).
-     * @return объект класса даты и времени.
-     */
-    @Override
-    public LocalDateTime unmarshal(String s) {
-        return LocalDateTime.parse(s);
-    }
-
-    /**
-     * Преобразует объект даты и времени в строку. Если в качестве объекта передан null, вернёт строку "null".
-     * @param localDateTime конвертируемый объект класса даты и времени.
-     * @return строковое представление даты и времени (например, 2021-02-21T20:43:16.367).
-     */
-    @Override
-    public String marshal(LocalDateTime localDateTime) {
-        if (localDateTime == null) return "null";
-        return localDateTime.toString();
     }
 }

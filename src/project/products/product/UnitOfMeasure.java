@@ -1,7 +1,7 @@
 package project.products.product;
 
 /**
- * Перечисление всех возможных единиц измерения товара.
+ * Перечисление единиц измерения товара.
  * @see Product
  */
 public enum UnitOfMeasure {

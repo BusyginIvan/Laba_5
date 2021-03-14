@@ -1,6 +1,7 @@
 package project.products.product_collection;
 
 import project.products.product.Product;
+import project.parsing.tags.ParentTag;
 
 import java.util.ArrayDeque;
 
@@ -15,7 +16,7 @@ public interface IProductCollection extends Iterable<Product> {
      */
     ArrayDeque<Product> getArrayDeque();
     /**
-     * Возвращает продукт в переданным номером или null, если такого нет.
+     * Возвращает продукт с переданным номером или null, если такого нет.
      * @param id номер (ID) продукта.
      * @return объект класса {@link Product} или null.
      */
@@ -31,4 +32,10 @@ public interface IProductCollection extends Iterable<Product> {
      * @return строковое представление даты.
      */
     String getInitializationDataString();
+
+    /**
+     * Возвращает объект {@link ParentTag}, описывающий эту коллекцию товаров.
+     * @return тег с вложенными тегами даты инициализации и перечисления товаров.
+     */
+    ParentTag getTag();
 }

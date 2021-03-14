@@ -1,60 +1,67 @@
 package project;
 
 import project.commands.command_map.CommandMap;
+import project.commands.commands.CommandException;
 import project.products.product_collection.IProductCollection;
 import project.products.product_collection.ProductCollection;
-import project.save_and_load.SaveAndLoad;
+import project.parsing.load.LoadException;
+import project.parsing.load.Loader;
+import project.parsing.save.Saver;
 
-import java.io.File;
 import java.io.IOException;
 
 /**
  * Этот класс содержит метод main.
- * @see project.save_and_load.SaveAndLoad
+ * @see Loader
+ * @see Saver
  * @see project.products.product_collection.ProductCollection
  * @see project.commands.command_map.CommandMap
- * @see MyReader
+ * @see ConsoleReader
  * */
 public class Main {
     /**
      * Загружает список товаров из указанного файла, содержит цикл ввода и исполнения команд.
-     * @param args аргумент командной строки; адрес файла, из которого будет осуществляться загрузка коллекции.
+     * @param args аргументы командной строки; args[0] - адрес файла, из которого будет осуществляться загрузка коллекции.
+     * @exception IOException если была ошибка при чтении подтверждения продолжения работы с новой пустой коллекцией.
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         if (args.length == 0) {
             System.out.println("Ошибка! Вы не указали файл в аргументе командной строки.");
             System.exit(1);
         }
-        File file = new File(args[0]);
-        if (!file.exists()) {
-            System.out.println("Ошибка! Указанного файла не существует.");
-            System.exit(1);
-        } else if (!file.canRead()) {
-            System.out.println("Ошибка! Нет права на чтение указанного файла.");
-            System.exit(1);
+
+        ConsoleReader.init();
+
+        Loader loader = new Loader();
+        IProductCollection productCollection = new ProductCollection();
+        try {
+            productCollection = loader.load(args[0]);
+            System.out.println("Коллекция загружена из файла.");
+        } catch (LoadException e) {
+            System.out.print(e.getMessage() +
+                    "\n\nЖелаете ли вы начать работу с новым пустым списком товаров?\n" +
+                    "Для подтверждения введите \"ок\": ");
+            if (!ConsoleReader.readLine().equals("ок"))
+                exit();
         }
 
-        SaveAndLoad saveAndLoad = new SaveAndLoad(file, ProductCollection.class);
-        IProductCollection productCollection;
-        if ((productCollection = (IProductCollection) saveAndLoad.load()) == null) {
-            System.out.println("Создана новая пустая коллекция.");
-            productCollection = new ProductCollection();
-        } else
-            System.out.println("Коллекция загружена из файла.");
-
-        CommandMap commands = new CommandMap(productCollection, saveAndLoad);
-
-        MyReader.init();
+        CommandMap commands = new CommandMap(productCollection, new Saver(args[0]));
         while (true) {
             try {
                 System.out.print("\nВведите команду: ");
-                commands.execute(MyReader.readLine());
+                commands.execute(ConsoleReader.readLine());
             } catch (IOException e) {
                 System.out.println("\nЧто-то пошло не так. Попробуйте ещё раз.");
-            } catch (IllegalArgumentException e) {
+            } catch (CommandException e) {
                 System.out.println(e.getMessage());
                 System.out.println("Повторите ввод команды.");
             }
         }
+    }
+
+    public static void exit() {
+        System.out.println("Завершение работы программы.");
+        ConsoleReader.close();
+        System.exit(0);
     }
 }

@@ -1,6 +1,9 @@
 package project.products.product;
 
 import com.sun.istack.internal.NotNull;
+import project.products.InvalidTagException;
+import project.parsing.tags.ParentTag;
+import project.parsing.tags.TextTag;
 
 import java.util.ArrayList;
 
@@ -19,12 +22,86 @@ public class Person implements Comparable<Person> {
     private static ArrayList<String> usedPassportID = new ArrayList<>();
 
     /**
+     * Пустой конструктор. Используется в {@link project.products.ElementBuilder}.
+     */
+    public Person() { }
+
+    /**
+     * Получает значения характеристик личности из тега.
+     * @param personTag тег с вложенными тегами name, passportID, weight и, возможно, height и location.
+     * @exception InvalidTagException если тег не содержит необходимых вложенных тегов или
+     * если в них содержатся некорректные данные.
+     */
+    public Person(ParentTag personTag) {
+        try {
+            name: {
+                for (String key : personTag.getArguments().keySet())
+                    if (key.equals("name")) {
+                        setName(personTag.getArguments().get(key));
+                        break name;
+                    }
+                throw new InvalidTagException(this.getClass(), "У тега нет аргумента имени.");
+            }
+            try {
+                String content = getChildTagContent(personTag, "height");
+                setHeight(content == null ? null : Float.valueOf(content));
+            } catch (NumberFormatException e) {
+                throw new InvalidTagException(this.getClass(), "Значение роста в теге записано некорректно.");
+            }
+            try {
+                setWeight(Float.valueOf(getNotNullContent(personTag, "weight")));
+            } catch (NumberFormatException e) {
+                throw new InvalidTagException(this.getClass(), "Значение веса в теге записано некорректно.");
+            }
+            setPassportID(getNotNullContent(personTag, "passportID"));
+            for (ParentTag element: personTag.getParentTags())
+                if (element.getName().equals("location")) {
+                    setLocation(new Location(element));
+                    break;
+                }
+        } catch (IllegalArgumentException e) {
+            throw new InvalidTagException(e.getMessage());
+        }
+    }
+
+    private static String getChildTagContent(ParentTag tag, String name) {
+        for (TextTag element: tag.getTextTags())
+            if (element.getName().equals(name))
+                return element.getContent();
+        return null;
+    }
+
+    private static String getNotNullContent(ParentTag tag, String fieldName) {
+        String content = getChildTagContent(tag, fieldName);
+        if (content == null)
+            throw new InvalidTagException(Person.class, "Отсутствует тег для поля " + fieldName + ".");
+        return content;
+    }
+
+    /**
+     * Метод для получения тега, описывающего этого человека.
+     * @return тег person, содержащий теги, соответствующие каждому непустому полю класса.
+     */
+    public ParentTag getTag() {
+        ParentTag parentTag = new ParentTag("person");
+        parentTag.addArgument("name", name);
+        parentTag.addTextTag(new TextTag("passportID", passportID));
+        parentTag.addTextTag(new TextTag("weight", weight + ""));
+        if (!(height == null))
+            parentTag.addTextTag(new TextTag("height", height + ""));
+        if (!(location == null))
+            parentTag.addParentTag(location.getTag());
+        return parentTag;
+    }
+
+    /**
      * Позволяет указать имя человека.
      * @param name новое имя.
      * @throws IllegalArgumentException бросает, если передана пустая строка или null.
      */
     public void setName(@NotNull String name) throws IllegalArgumentException {
-        if (name == null || name.isEmpty()) throw new IllegalArgumentException("Имя человека должно быть представлено непустой строкой!");
+        if (name == null || name.isEmpty())
+            throw new IllegalArgumentException("Имя человека должно быть представлено непустой строкой!");
         this.name = name;
     }
 
