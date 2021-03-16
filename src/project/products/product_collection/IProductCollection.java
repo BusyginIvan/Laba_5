@@ -14,7 +14,7 @@ public interface IProductCollection extends Iterable<Product> {
      * Возвращает ссылку на коллекцию товаров.
      * @return коллекция (двусторонняя очередь).
      */
-    ArrayDeque<Product> getArrayDeque();
+    ArrayDeque<Product> getProducts();
     /**
      * Возвращает продукт с переданным номером или null, если такого нет.
      * @param id номер (ID) продукта.

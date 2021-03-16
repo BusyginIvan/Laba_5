@@ -5,7 +5,7 @@ import project.products.InvalidTagException;
 import project.parsing.tags.ParentTag;
 import project.parsing.tags.TextTag;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 
 /**
  * Класс, содержащий информацию о человеке: имя, номер паспорта, рост (если он имеет значение), масса и место нахождения (если оно имеет значение).
@@ -19,7 +19,7 @@ public class Person implements Comparable<Person> {
     private String passportID;
     private Location location;
 
-    private static ArrayList<String> usedPassportID = new ArrayList<>();
+    private static HashSet<String> usedPassportID = new HashSet<>();
 
     /**
      * Пустой конструктор. Используется в {@link project.products.ElementBuilder}.
@@ -83,7 +83,7 @@ public class Person implements Comparable<Person> {
      * @return тег person, содержащий теги, соответствующие каждому непустому полю класса.
      */
     public ParentTag getTag() {
-        ParentTag parentTag = new ParentTag("person");
+        ParentTag parentTag = new ParentTag("owner");
         parentTag.addArgument("name", name);
         parentTag.addTextTag(new TextTag("passportID", passportID));
         parentTag.addTextTag(new TextTag("weight", weight + ""));
@@ -138,7 +138,7 @@ public class Person implements Comparable<Person> {
         if (passportID == null || passportID.length() < 4)
             throw new IllegalArgumentException("Номер паспорта должен быть представлен строкой не менее чем из 4 символов!");
         if (usedPassportID.contains(passportID))
-            throw new IllegalArgumentException("Номер паспорта должен быть уникальным!");
+            throw new ContainsPassportID("Номер паспорта должен быть уникальным!");
         usedPassportID.remove(this.passportID);
         usedPassportID.add(passportID);
         this.passportID = passportID;

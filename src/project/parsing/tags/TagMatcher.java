@@ -8,16 +8,19 @@ import java.util.regex.Pattern;
  * найденных тегах.
  */
 public class TagMatcher {
-    public final static Pattern pattern = Pattern.compile(
-            "(?s)<\\s*(?<name>\\w*)(?<args>(\\s+\\w+\\s*=\\s*\"[^\"]*\")*)\\s*>(?<content>.*?)<\\s*/\\s*\\k<name>\\s*>");
-    private Matcher matcher;
+    public final static Pattern beginTagPattern = Pattern.compile("<\\s*(?<name>\\w*)(?<args>(\\s+\\w+\\s*=\\s*\"[^\"]*\")*)\\s*>");
+    private String text;
+    private int i;
+    private String name;
+    private String args;
+    private String content;
 
     /**
      * Создаёт объект для работы с указанным текстом.
      * @param text обрабатываемый текст.
      */
-    public TagMatcher(CharSequence text) {
-        matcher = pattern.matcher(text);
+    public TagMatcher(String text) {
+        this.text = text;
     }
 
     /**
@@ -25,7 +28,24 @@ public class TagMatcher {
      * @return true, если тег был найден.
      */
     public boolean findTag() {
-        return matcher.find();
+        Matcher matcher = beginTagPattern.matcher(text.substring(i));
+        if (!matcher.find())
+            return false;
+        i = matcher.end();
+        name = matcher.group("name");
+        args = matcher.group("args");
+        String beginTagRegex = "<\\s*" + name + "(\\s+\\w+\\s*=\\s*\"[^\"]*\")*\\s*>";
+        matcher = Pattern.compile("(" + beginTagRegex + ")|(<\\s*/\\s*" + name + "\\s*>)").matcher(text.substring(i));
+        int n = 1;
+        while (n > 0) {
+            if (!matcher.find())
+                return false;
+            if (matcher.group().matches(beginTagRegex)) n++;
+            else n--;
+        }
+        content = text.substring(i, matcher.start());
+        i = matcher.end();
+        return true;
     }
 
     /**
@@ -34,7 +54,7 @@ public class TagMatcher {
      * @exception IllegalStateException если тег не искался или не был найден.
      */
     public String getName() {
-        return matcher.group("name");
+        return name;
     }
 
     /**
@@ -43,7 +63,7 @@ public class TagMatcher {
      * @exception IllegalStateException если тег не искался или не был найден.
      */
     public String getArgs() {
-        return matcher.group("args");
+        return args;
     }
 
     /**
@@ -52,7 +72,7 @@ public class TagMatcher {
      * @exception IllegalStateException если тег не искался или не был найден.
      */
     public String getContent() {
-        return matcher.group("content");
+        return content;
     }
 
     /**
@@ -60,8 +80,8 @@ public class TagMatcher {
      * @param text текст, в котором ищется тег.
      * @return true, если в тексте есть тег.
      */
-    public static boolean haveTag(CharSequence text) {
-        return pattern.matcher(text).find();
+    public static boolean haveTag(String text) {
+        return new TagMatcher(text).findTag();
     }
 
     /**
@@ -69,6 +89,6 @@ public class TagMatcher {
      * @return true, если тег имеется.
      */
     public boolean haveTag() {
-        return haveTag(getContent());
+        return haveTag(content);
     }
 }

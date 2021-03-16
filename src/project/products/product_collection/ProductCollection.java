@@ -1,7 +1,8 @@
 package project.products.product_collection;
 
-import com.sun.istack.internal.NotNull;
 import project.products.InvalidTagException;
+import project.products.product.ContainsPassportID;
+import project.products.product.Person;
 import project.products.product.Product;
 import project.parsing.tags.ParentTag;
 import project.parsing.tags.TextTag;
@@ -9,6 +10,7 @@ import project.parsing.tags.TextTag;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayDeque;
+import java.util.HashSet;
 import java.util.Iterator;
 
 /**
@@ -17,14 +19,14 @@ import java.util.Iterator;
  * @see Product
  */
 public class ProductCollection implements IProductCollection {
-    private ArrayDeque<Product> arrayDeque;
+    private ArrayDeque<Product> products;
     private LocalDate initializationDate;
 
     /**
      * Создаёт пустую коллекцию и устанавливает текущее время в качестве даты создания.
      */
     public ProductCollection() {
-        arrayDeque = new ArrayDeque<>();
+        products = new ArrayDeque<>();
         initializationDate = LocalDate.now();
     }
 
@@ -46,15 +48,21 @@ public class ProductCollection implements IProductCollection {
             throw new InvalidTagException(this.getClass(), "Неверно записана дата инициализации.");
         }
 
-        arrayDeque = new ArrayDeque<>();
+        products = new ArrayDeque<>();
         for (ParentTag tagInProductCollection: productCollectionTag.getParentTags())
             if (tagInProductCollection.getName().equals("products")) {
+                HashSet<ParentTag> tagsWithInvalidOwner = new HashSet<>();
                 for (ParentTag tagInProducts: tagInProductCollection.getParentTags())
                     if (tagInProducts.getName().equals("product")) {
                         try {
-                            arrayDeque.add(new Product(tagInProducts));
+                            products.add(new Product(tagInProducts));
+                        } catch (ContainsPassportID e) {
+                            tagsWithInvalidOwner.add(tagInProducts);
                         } catch (InvalidTagException e) {}
                     }
+                if (tagsWithInvalidOwner.size() > 0) {
+                    System.out.print("При загрузке товаров в коллекцию из файла, были обнаружены такие, у которых владельцы имеют совпадающие ");
+                }
                 return;
             }
     }
@@ -68,7 +76,7 @@ public class ProductCollection implements IProductCollection {
         ParentTag productCollectionTag = new ParentTag("productCollection");
         productCollectionTag.addTextTag(new TextTag("initializationDate", initializationDate.toString()));
         ParentTag productsTag = new ParentTag("products");
-        for (Product product: arrayDeque)
+        for (Product product: products)
             productsTag.addParentTag(product.getTag());
         productCollectionTag.addParentTag(productsTag);
         return productCollectionTag;
@@ -80,7 +88,7 @@ public class ProductCollection implements IProductCollection {
      * @return объект класса {@link Product} или null.
      */
     public Product getProductByID(long id) {
-        for (Product product: arrayDeque) {
+        for (Product product: products) {
             if (product.getID() == id)
                 return product;
         }
@@ -108,25 +116,25 @@ public class ProductCollection implements IProductCollection {
      * @return итератор.
      */
     public Iterator<Product> iterator() {
-        return arrayDeque.iterator();
+        return products.iterator();
     }
 
     /**
      * Возвращает ссылку на коллекцию товаров.
      * @return коллекция (двусторонняя очередь).
      */
-    public ArrayDeque<Product> getArrayDeque() {
-        return arrayDeque;
+    public ArrayDeque<Product> getProducts() {
+        return products;
     }
 
-    /**
+    /*/**
      * Задать коллекцию товаров.
      * @param arrayDeque объект коллекции {@link ArrayDeque}.
-     */
+     *
     public void setArrayDeque(@NotNull ArrayDeque<Product> arrayDeque) {
         if (arrayDeque == null) throw new NullPointerException();
         this.arrayDeque = arrayDeque;
-    }
+    }*/
 
     /**
      * Возвращает дату инициализации.
