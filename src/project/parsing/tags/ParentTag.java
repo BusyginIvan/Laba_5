@@ -1,6 +1,7 @@
 package project.parsing.tags;
 
 import java.util.HashSet;
+import java.util.Iterator;
 
 /**
  * Класс, представляющий тег, содержащий другие теги. Помимо имени и списка аргументов хранит список текстовых и
@@ -83,5 +84,63 @@ public class ParentTag extends Tag {
      */
     public HashSet<TextTag> getTextTags() {
         return textTags;
+    }
+
+    /**
+     * Возвращает содержимое вложенного тега с текстом.
+     * @param name имя искомого тега.
+     * @return текст или null, если тега нет.
+     * @exception DuplicateTagException если тегов с таким именем несколько.
+     */
+    public String getNestedTagContent(String name) {
+        String content = null;
+        for (TextTag nestedTag: getTextTags())
+            if (nestedTag.getName().equals(name))
+                if (content == null)
+                    content = nestedTag.getContent();
+                else
+                    throw new DuplicateTagException(name);
+        return content;
+    }
+
+    /**
+     * Возвращает вложенный тег, содержащий теги.
+     * @param name имя искомого тега.
+     * @return тег или null, если его нет.
+     * @exception DuplicateTagException если тегов с таким именем несколько.
+     */
+    public ParentTag getNestedParentTag(String name) {
+        ParentTag nestedParentTag = null;
+        for (ParentTag nestedTag: getParentTags())
+            if (nestedTag.getName().equals(name))
+                if (nestedParentTag == null)
+                    nestedParentTag = nestedTag;
+                else
+                    throw new InvalidTagException("Дублируется тег " + name + ".");
+        return nestedParentTag;
+    }
+
+    /**
+     * Удаляет все вложенные теги с таким именем.
+     * @param name имя удаляемых тегов.
+     * @return true, если хоть один тег был удалён.
+     */
+    public boolean removeNestedParentTag(String name) {
+        Iterator<ParentTag> iterator1 = parentTags.iterator();
+        boolean removed = false;
+        while (iterator1.hasNext()) {
+            if (iterator1.next().getName().equals(name)) {
+                iterator1.remove();
+                removed = true;
+            }
+        }
+        Iterator<TextTag> iterator2 = textTags.iterator();
+        while (iterator2.hasNext()) {
+            if (iterator2.next().getName().equals(name)) {
+                iterator2.remove();
+                removed = true;
+            }
+        }
+        return removed;
     }
 }

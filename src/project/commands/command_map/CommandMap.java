@@ -34,7 +34,7 @@ public class CommandMap implements ICommandMap {
         commands.put("head", new Head(productCollection));
         commands.put("min_by_owner", new MinByOwner(productCollection));
         commands.put("max_by_coordinates", new MaxByCoordinates(productCollection));
-        commands.put("print_unique_owner", new PrintUniqueOwner(productCollection));
+        commands.put("print_unique_owner", new PrintUniqueOwner());
         commands.put("add_if_max", new AddIfMax(productCollection));
         commands.put("execute_script", new ExecuteScript(this));
         commands.put("exit", new Exit());

@@ -1,11 +1,17 @@
 package project.products.product;
 
 import com.sun.istack.internal.NotNull;
-import project.products.InvalidTagException;
+
+import project.parsing.tags.InvalidTagException;
 import project.parsing.tags.ParentTag;
 import project.parsing.tags.TextTag;
 
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Objects;
+
+import static project.products.ElementBuilder.setField;
+import static project.products.ElementBuilder.getLine;
 
 /**
  * Класс, содержащий информацию о человеке: имя, номер паспорта, рост (если он имеет значение), масса и место нахождения (если оно имеет значение).
@@ -19,63 +25,110 @@ public class Person implements Comparable<Person> {
     private String passportID;
     private Location location;
 
-    private static HashSet<String> usedPassportID = new HashSet<>();
+    private static boolean lastIsNew;
+    private final static HashSet<Person> persons = new HashSet<>();
+
+    private Person() {}
 
     /**
-     * Пустой конструктор. Используется в {@link project.products.ElementBuilder}.
+     * Поочерёдно запрашивает значения всех полей у пользователя и возвращает нового человека или ссылку на существующего.
+     * Устанавливает флаг lastIsNew.
+     * @param status существительное в родительном падеже, которым следует назвать человека при запросе номера паспорта.
+     * @return null, если пользователь не стал вводить номер паспорта, ссылка на существующего человека с указанным
+     * номером паспорта или новый человек.
      */
-    public Person() { }
+    public static Person newPerson(String status) {
+        String passportID = getLine(
+                "Введите номер паспорта " + status + " или оставьте строку пустой",
+                str -> str.equals("") ? null : requireValidPassportID(str));
+
+        if (passportID == null) return null;
+
+        for (Person existingPerson: persons)
+            if (existingPerson.getPassportID().equals(passportID)) {
+                lastIsNew = false;
+                return existingPerson;
+            }
+
+        Person newPerson = new Person();
+        setField("Введите рост владельца или оставьте строку пустой",
+                str -> newPerson.setHeight(str.equals("") ? null : Float.valueOf(str)));
+        setField("Введите вес владельца",
+                str -> newPerson.setWeight(Float.parseFloat(str)));
+        newPerson.setLocation(Location.newLocation());
+        lastIsNew = true;
+        persons.add(newPerson);
+        return newPerson;
+    }
 
     /**
-     * Получает значения характеристик личности из тега.
+     * Получает значения характеристик личности из тега. Создаёт нового человека или возвращает ссылку на уже существующего.
+     * Устанавливает флаг lastIsNew.
      * @param personTag тег с вложенными тегами name, passportID, weight и, возможно, height и location.
      * @exception InvalidTagException если тег не содержит необходимых вложенных тегов или
      * если в них содержатся некорректные данные.
+     * @exception NotUniquePassportIDException если уже существует человек с таким номером паспорта, но другими характеристиками.
+     * @return ссылка на нового или уже существовавшего человека или null, если в качестве тега был передан null.
      */
-    public Person(ParentTag personTag) {
+    public static Person newPerson(ParentTag personTag) {
+        if (personTag == null)
+            return null;
+        String className = "Person";
         try {
-            name: {
-                for (String key : personTag.getArguments().keySet())
-                    if (key.equals("name")) {
-                        setName(personTag.getArguments().get(key));
-                        break name;
+            if (!personTag.getArguments().containsKey("passportID"))
+                throw new InvalidTagException(className, "У тега нет аргумента с номером паспорта.");
+            Person newPerson = new Person();
+
+            newPerson.passportID = requireValidPassportID(personTag.getArguments().get("passportID"));
+
+            newPerson.setName(Objects.requireNonNull(personTag.getNestedTagContent("name"), "name"));
+
+            try {
+                String content = personTag.getNestedTagContent("height");
+                newPerson.setHeight(content == null ? null : Float.valueOf(content));
+            } catch (NumberFormatException e) {
+                throw new InvalidTagException(className, "Значение роста в теге записано некорректно.");
+            }
+
+            try {
+                newPerson.setWeight(Float.parseFloat(Objects.requireNonNull(personTag.getNestedTagContent("weight"), "weight")));
+            } catch (NumberFormatException e) {
+                throw new InvalidTagException(className, "Значение веса в теге записано некорректно.");
+            }
+
+            ParentTag locationTag;
+            try {
+                locationTag = personTag.getNestedParentTag("location");
+            } catch (InvalidTagException e) {
+                throw new InvalidTagException(className, e.getMessage());
+            }
+            newPerson.setLocation(Location.newLocation(locationTag));
+
+            for (Person existingPerson: persons)
+                if (existingPerson.getPassportID().equals(newPerson.passportID))
+                    if (existingPerson.equals(newPerson)) {
+                        lastIsNew = false;
+                        return existingPerson;
                     }
-                throw new InvalidTagException(this.getClass(), "У тега нет аргумента имени.");
-            }
-            try {
-                String content = getChildTagContent(personTag, "height");
-                setHeight(content == null ? null : Float.valueOf(content));
-            } catch (NumberFormatException e) {
-                throw new InvalidTagException(this.getClass(), "Значение роста в теге записано некорректно.");
-            }
-            try {
-                setWeight(Float.valueOf(getNotNullContent(personTag, "weight")));
-            } catch (NumberFormatException e) {
-                throw new InvalidTagException(this.getClass(), "Значение веса в теге записано некорректно.");
-            }
-            setPassportID(getNotNullContent(personTag, "passportID"));
-            for (ParentTag element: personTag.getParentTags())
-                if (element.getName().equals("location")) {
-                    setLocation(new Location(element));
-                    break;
-                }
+                    else
+                        throw new NotUniquePassportIDException(newPerson.passportID);
+            lastIsNew = true;
+            persons.add(newPerson);
+            return newPerson;
         } catch (IllegalArgumentException e) {
-            throw new InvalidTagException(e.getMessage());
+            throw new InvalidTagException(className, e.getMessage());
+        } catch (NullPointerException e) {
+            throw new InvalidTagException(className, " Отсутствует тег для поля " + e.getMessage() + ".");
         }
     }
 
-    private static String getChildTagContent(ParentTag tag, String name) {
-        for (TextTag element: tag.getTextTags())
-            if (element.getName().equals(name))
-                return element.getContent();
-        return null;
-    }
-
-    private static String getNotNullContent(ParentTag tag, String fieldName) {
-        String content = getChildTagContent(tag, fieldName);
-        if (content == null)
-            throw new InvalidTagException(Person.class, "Отсутствует тег для поля " + fieldName + ".");
-        return content;
+    /**
+     * Возвращает текущее значение флага lastIsNew.
+     * @return true, если при последнем вызове newPerson() был создан новый человек; false, если была возвращена лишь
+     * ссылка на существующего.
+     */
+    public static boolean lastIsNew() {
+        return lastIsNew;
     }
 
     /**
@@ -84,14 +137,22 @@ public class Person implements Comparable<Person> {
      */
     public ParentTag getTag() {
         ParentTag parentTag = new ParentTag("owner");
-        parentTag.addArgument("name", name);
-        parentTag.addTextTag(new TextTag("passportID", passportID));
+        parentTag.addArgument("passportID", passportID);
+        parentTag.addTextTag(new TextTag("name", name));
         parentTag.addTextTag(new TextTag("weight", weight + ""));
         if (!(height == null))
             parentTag.addTextTag(new TextTag("height", height + ""));
         if (!(location == null))
             parentTag.addParentTag(location.getTag());
         return parentTag;
+    }
+
+    /**
+     * Возвращает ссылку на множество всех известных людей.
+     * @return множество созданных объектов Person.
+     */
+    public static HashSet<Person> getPersons() {
+        return persons;
     }
 
     /**
@@ -130,18 +191,14 @@ public class Person implements Comparable<Person> {
     }
 
     /**
-     * Позволяет указать номер паспорта. Номер должен быть уникальным (ранее не использовавшимся).
-     * @param passportID номер паспорта.
-     * @throws IllegalArgumentException бросает, если передан null, строка менее чем из 4 символов или уже использовавшийся номер.
+     * Требует соблюдения правил для номера паспорта (более 3 символов).
+     * @param passportID проверяемая строка.
+     * @return то же, что в аргументе.
      */
-    public void setPassportID(@NotNull String passportID) throws IllegalArgumentException {
+    public static String requireValidPassportID(String passportID) {
         if (passportID == null || passportID.length() < 4)
             throw new IllegalArgumentException("Номер паспорта должен быть представлен строкой не менее чем из 4 символов!");
-        if (usedPassportID.contains(passportID))
-            throw new ContainsPassportID("Номер паспорта должен быть уникальным!");
-        usedPassportID.remove(this.passportID);
-        usedPassportID.add(passportID);
-        this.passportID = passportID;
+        return passportID;
     }
 
     /**
@@ -192,25 +249,54 @@ public class Person implements Comparable<Person> {
         return location;
     }
 
+    public static boolean removePerson(String passportID) {
+        Iterator<Person> iterator = persons.iterator();
+        while (iterator.hasNext()) {
+            if (iterator.next().getPassportID().equals(passportID)) {
+                iterator.remove();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Переопределяет toString() класса Object. Возвращает строку с именем и номером паспорта.
+     * @return имя и номер паспорта.
+     */
+    @Override
+    public String toString() {
+        return name + " (номер паспорта - " + passportID + ")";
+    }
+
     /**
      * Сравнивает с другим человеком по положению имён в алфавитном порядке.
      * @param person другой человек.
      * @return число меньше нуля, если имя этого человека предшествует имени другого; равное нулю, если они тёзки; больше нуля, если имя этого человека следует за именем другого.
+     * @exception NullPointerException если в аргументе null.
      */
     @Override
-    public int compareTo(Person person) {
-        return name.compareTo(person.getName());
+    public int compareTo(@NotNull Person person) {
+        return name.compareTo(Objects.requireNonNull(person,
+                "Ошибка сравнения одного человека с другим по имени. В качестве аргумента передан null.")
+                .getName());
     }
 
     /**
-     * Проверяет, представляет ли другой объект этого же человека.
+     * Проверяет, представляет ли другой объект этого же человека. Используется для замены при создании копии человека
+     * ссылкой на уже существующего.
      * @param o объект некоторого класса.
-     * @return true, если объект ссылается на того же человека.
+     * @return true, если значения всех полей совпадают.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        return passportID.equals(((Person) o).passportID);
+        Person person = (Person) o;
+        return Float.compare(person.weight, weight) == 0 &&
+                name.equals(person.name) &&
+                Objects.equals(height, person.height) &&
+                passportID.equals(person.passportID) &&
+                Objects.equals(location, person.location);
     }
 }

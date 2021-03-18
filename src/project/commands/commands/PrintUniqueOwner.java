@@ -11,36 +11,21 @@ import java.util.HashSet;
  * @see project.commands.command_map.CommandMap
  */
 public class PrintUniqueOwner implements ICommand {
-    IProductCollection productCollection;
-
-    /**
-     * Эта команда будет работать с товарами из переданной в конструктор коллекции.
-     * @param productCollection коллеция товаров.
-     */
-    public PrintUniqueOwner(IProductCollection productCollection) {
-        this.productCollection = productCollection;
-    }
-
     /**
      * Выводит имена и номера паспорта людей, являющихся владельцами тех или иных товаров.
      * @param arguments массив аргументов команды (не имеет значения).
      */
     @Override
     public void execute(String[] arguments) {
-        HashSet<Person> owners = new HashSet<>();
-        for (Product product: productCollection)
-            if (product.getOwner() != null)
-                owners.add(product.getOwner());
-        if (owners.size() == 0)
+        if (Person.getPersons().size() == 0)
             System.out.println("Владельцев нет.");
         else
-            for (Person person: owners)
-                System.out.println(person.getName() + " (номер паспорта - " + person.getPassportID() + ")");
+            for (Person person: Person.getPersons())
+                System.out.println(person.toString());
     }
 
     /**
-     * Возвращает описание команды в виде массива строк: первые элементы - названия аргументов, последний - строка,
-     * описывающая команду.
+     * Возвращает описание команды в виде массива, содержащего одну строку с описанием. Используется в {@link Help}.
      * @return массив строк.
      */
     @Override

@@ -16,15 +16,15 @@ public interface IProductCollection extends Iterable<Product> {
      */
     ArrayDeque<Product> getProducts();
     /**
-     * Возвращает продукт с переданным номером или null, если такого нет.
-     * @param id номер (ID) продукта.
+     * Возвращает товар с переданным номером или null, если такого нет.
+     * @param id номер (ID) товара.
      * @return объект класса {@link Product} или null.
      */
     Product getProductByID(long id);
     /**
-     * Удаляет продукт с указанным номером.
-     * @param id номер (ID) продукта.
-     * @return true, если такой продукт был и удалён, иначе false.
+     * Удаляет товар с указанным номером.
+     * @param id номер (ID) товара.
+     * @return true, если такой товар был и удалён, иначе false.
      */
     boolean removeProductByID(long id);
     /**

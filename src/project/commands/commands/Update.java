@@ -21,8 +21,7 @@ public class Update implements ICommand {
     }
 
     /**
-     * Получает значения характеристик товара, применяя метод {@link ElementBuilder#changeProduct(Product)}, и заменяет
-     * товар с указанным номером на новый.
+     * Получает значения характеристик товара у пользователя и заменяет товар с указанным номером на новый.
      * @param arguments массив аргументов команды, arguments[0] - номер товара.
      * @exception CommandException если отсутсвует или некорректно записан аргумент номера товара.
      */
@@ -31,7 +30,7 @@ public class Update implements ICommand {
         if (arguments == null || arguments.length == 0)
             throw new CommandException("После этой команды должен следовать аргумент с номером товара.");
         try {
-            ElementBuilder.changeProduct(productCollection.getProductByID(Long.valueOf(arguments[0])));
+            productCollection.getProductByID(Long.parseLong(arguments[0])).update();
         } catch (NumberFormatException e) {
             throw new CommandException("Аргумент номера товара - натуральное число.");
         } catch (NullPointerException e) {
@@ -41,7 +40,7 @@ public class Update implements ICommand {
 
     /**
      * Возвращает описание команды в виде массива строк: первые элементы - названия аргументов, последний - строка,
-     * описывающая команду.
+     * описывающая команду. Используется в {@link Help}.
      * @return массив строк.
      */
     @Override

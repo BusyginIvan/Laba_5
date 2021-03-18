@@ -21,19 +21,16 @@ public class Add implements ICommand {
     }
 
     /**
-     * Получает значения характеристик товара, применяя метод {@link ElementBuilder#changeProduct(Product)}, и помещает новый товар в коллекцию.
+     * Получает значения характеристик товара у пользователя и помещает новый товар в коллекцию.
      * @param arguments массив аргументов команды (не имеет значения).
      */
     @Override
     public void execute(String[] arguments) {
-        Product product = new Product();
-        ElementBuilder.changeProduct(product);
-        productCollection.getProducts().add(product);
+                productCollection.getProducts().add(new Product());
     }
 
     /**
-     * Возвращает описание команды в виде массива строк: первые элементы - названия аргументов, последний - строка,
-     * описывающая команду.
+     * Возвращает описание команды в виде массива, содержащего одну строку с описанием. Используется в {@link Help}.
      * @return массив строк.
      */
     @Override

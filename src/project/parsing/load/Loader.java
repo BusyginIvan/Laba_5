@@ -1,5 +1,6 @@
 package project.parsing.load;
 
+import project.parsing.tags.InvalidTagException;
 import project.products.product_collection.ProductCollection;
 import project.parsing.tags.ParentTag;
 import project.parsing.tags.TagMatcher;
@@ -32,10 +33,14 @@ public class Loader {
             if (tagMatcher.findTag()) {
                 if (tagMatcher.haveTag())
                     return new ProductCollection(new ParentTag(tagMatcher));
-            }
-            throw new LoadException("Ошибка загрузки! Неверное содержимое файла.");
+                else
+                    throw new LoadException("Ошибка загрузки! Корневой тег не имеет должного содержимого.");
+            } else
+                throw new LoadException("Ошибка загрузки! Файл не содержит корневого тега.");
         } catch (FileNotFoundException e) {
             throw new LoadException("Ошибка загрузки! Файл не найден.");
+        } catch (InvalidTagException e) {
+            throw new LoadException(e.getMessage());
         }
     }
 }

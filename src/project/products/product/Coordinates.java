@@ -1,9 +1,11 @@
 package project.products.product;
 
 import com.sun.istack.internal.NotNull;
-import project.products.InvalidTagException;
+import project.parsing.tags.InvalidTagException;
 import project.parsing.tags.ParentTag;
 import project.parsing.tags.TextTag;
+
+import static project.products.ElementBuilder.setField;
 
 /**
  * Класс с парой координат x и y.
@@ -14,9 +16,12 @@ public class Coordinates implements Comparable<Coordinates> {
     private double y;
 
     /**
-     * Пустой конструктор. Используется в {@link project.products.ElementBuilder}.
+     * Запрашивает значения координат у пользователя.
      */
-    public Coordinates() { }
+    public Coordinates() {
+        setField("Введите вещественную координату x", str -> setX(Float.parseFloat(str)));
+        setField("Введите вещественную координату y", str -> setY(Double.parseDouble(str)));
+    }
 
     /**
      * Получает значения координат x и y из соответствующего тега.
@@ -25,22 +30,18 @@ public class Coordinates implements Comparable<Coordinates> {
      * если в попавшихся в нём тегах x или y неверно записано вещественное число.
      */
     public Coordinates(ParentTag coordinatesTag) {
-        setX(Float.valueOf(getTextFromTag(coordinatesTag, "x")));
-        setY(Double.valueOf(getTextFromTag(coordinatesTag, "y")));
-    }
-
-    private String getTextFromTag(ParentTag tag, String name) {
-        for (TextTag element: tag.getTextTags())
-            if (element.getName().equals(name)) {
-                try {
-                    return element.getContent();
-                } catch (NumberFormatException e) {
-                    throw new InvalidTagException(this.getClass(), "В теге неверно указано значение координаты " + name + ".");
-                } catch (IllegalArgumentException e) {
-                    throw new InvalidTagException(this.getClass(), e.getMessage());
-                }
-            }
-        throw new InvalidTagException(this.getClass(), "Тег не содержит координату " + name + ".");
+        String className = "Coordinates";
+        String name = "x";
+        try {
+            setX(Float.parseFloat(coordinatesTag.getNestedTagContent(name)));
+            setY(Double.parseDouble(coordinatesTag.getNestedTagContent((name = "y"))));
+        } catch (NullPointerException e) {
+            throw new InvalidTagException(className, " Отсутствует тег для поля " + name + ".");
+        } catch (NumberFormatException e) {
+            throw new InvalidTagException(className, "В теге неверно указано значение координаты " + name + ".");
+        } catch (InvalidTagException | IllegalArgumentException e) {
+            throw new InvalidTagException(className, e.getMessage());
+        }
     }
 
     /**

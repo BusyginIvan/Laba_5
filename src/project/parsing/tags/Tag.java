@@ -1,6 +1,7 @@
 package project.parsing.tags;
 
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,10 +15,10 @@ public class Tag {
     /**
      * Создаёт тег по последней находке объекта TagMatcher.
      * @param matcher объект, предварительно нашедший тег в тексте методом {@link TagMatcher#findTag()}.
-     * @exception IllegalStateException бросается, если тег не искался или не был найден.
+     * @exception NullPointerException если тег не искался или не был найден или если в аргументе null.
      */
     public Tag(TagMatcher matcher) {
-        name = matcher.getName();
+        name = Objects.requireNonNull(matcher.getName());
         Pattern argsPattern = Pattern.compile("\\s+(?<name>\\w+)\\s*=\\s*\"(?<value>[^\"]*)\"");
         Matcher argsMatcher = argsPattern.matcher(matcher.getArgs());
         arguments = new HashMap<>();

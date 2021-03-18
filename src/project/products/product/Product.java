@@ -1,7 +1,8 @@
 package project.products.product;
 
 import com.sun.istack.internal.NotNull;
-import project.products.InvalidTagException;
+import project.parsing.tags.DuplicateTagException;
+import project.parsing.tags.InvalidTagException;
 import project.parsing.tags.ParentTag;
 import project.parsing.tags.TextTag;
 
@@ -10,6 +11,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
+import static project.products.ElementBuilder.setField;
 
 /**
  * Класс, хранящий в себе информацию о некотором товаре.
@@ -20,7 +22,7 @@ import static java.util.Objects.requireNonNull;
  * @see Location
  */
 public class Product implements Comparable<Product> {
-    private long ID;
+    private final long ID;
     private String name;
     private Coordinates coordinates;
     private LocalDateTime creationDate;
@@ -36,9 +38,24 @@ public class Product implements Comparable<Product> {
     }
 
     /**
-     * Пустой конструктор. Используется в {@link project.products.ElementBuilder}.
+     * Поочерёдно запрашивает значения всех полей у пользователя.
      */
-    public Product() { }
+    public Product() {
+        update();
+    }
+
+    /**
+     * Поочерёдно запрашивает значения всех полей у пользователя и заменяет ими старые.
+     */
+    public void update() {
+        setField("Введите наименование товара", this::setName);
+        Coordinates coordinates = new Coordinates();
+        setCoordinates(coordinates);
+        setField("Введите цену на товар", str -> setPrice(Double.parseDouble(str)));
+        setField("Введите единицу измерения (KILOGRAMS / SQUARE_METERS / LITERS / GRAMS) или оставьте строку пустой",
+                str -> setUnitOfMeasure(str.equals("") ? null : UnitOfMeasure.valueOf(str)));
+        setOwner(Person.newPerson("владельца"));
+    }
 
     /**
      * Получает значения характеристик товара из тега.
@@ -46,56 +63,35 @@ public class Product implements Comparable<Product> {
      * @exception InvalidTagException если тег не содержит необходимых вложенных тегов или если в них некорректные данные.
      */
     public Product(ParentTag productTag) {
+        String className = "Product";
         try {
-            name: {
-                for (String key : productTag.getArguments().keySet())
-                    if (key.equals("name")) {
-                        setName(productTag.getArguments().get(key));
-                        break name;
-                    }
-                throw new InvalidTagException(this.getClass(), "У тега нет аргумента имени.");
-            }
             String fieldName;
-            setCoordinates(new Coordinates(requireNonNull(getNestedParentTag(productTag, (fieldName = "coordinates")), fieldName)));
+            if (!productTag.getArguments().containsKey(fieldName = "name"))
+                throw new InvalidTagException(className, "У тега нет аргумента " + fieldName + ".");
+            setName(productTag.getArguments().get(fieldName));
+
             try {
-                setCreationDate(LocalDateTime.parse(requireNonNull(getTextFromNestedTag(productTag, (fieldName = "creationDate")), fieldName)));
-            } catch (DateTimeParseException e) {
-                throw new InvalidTagException(this.getClass(), "Неверно записана дата производства.");
+                setCoordinates(new Coordinates(requireNonNull(productTag.getNestedParentTag(fieldName = "coordinates"), fieldName)));
+                setCreationDate(LocalDateTime.parse(requireNonNull(productTag.getNestedTagContent(fieldName = "creationDate"), fieldName)));
+                setPrice(Double.parseDouble(requireNonNull(productTag.getNestedTagContent(fieldName = "price"), fieldName)));
+                setOwner(Person.newPerson(productTag.getNestedParentTag("owner")));
+            } catch (NullPointerException e) {
+                throw new InvalidTagException(className, "Отсутствует тег для поля " + e.getMessage() + ".");
+            } catch (DateTimeParseException | NumberFormatException e) {
+                throw new InvalidTagException(className, "Неверно записано значение поля " + fieldName + ".");
+            } catch (DuplicateTagException e) {
+                throw new InvalidTagException(className, e.getMessage());
             }
-            try {
-                setPrice(Double.valueOf(requireNonNull(getTextFromNestedTag(productTag, (fieldName = "price")), fieldName)));
-            } catch (NumberFormatException e) {
-                throw new InvalidTagException(this.getClass(), "Цена записана некорректно.");
-            }
-            for (TextTag element: productTag.getTextTags())
-                if (element.getName().equals("unitOfMeasure")) {
-                    setUnitOfMeasure(UnitOfMeasure.valueOf(element.getContent()));
-                    break;
-                }
-            for (ParentTag element: productTag.getParentTags())
-                if (element.getName().equals("owner")) {
-                    setOwner(new Person(element));
-                    break;
-                }
         } catch (IllegalArgumentException e) {
             throw new InvalidTagException(e.getMessage());
-        } catch (NullPointerException e) {
-            throw new InvalidTagException(this.getClass(), "Отсутствует тег для поля " + e.getMessage() + ".");
         }
-    }
 
-    private static String getTextFromNestedTag(ParentTag tag, String name) {
-        for (TextTag element: tag.getTextTags())
-            if (element.getName().equals(name))
-                return element.getContent();
-        return null;
-    }
-
-    private static ParentTag getNestedParentTag(ParentTag tag, String tagName) {
-        for (ParentTag element: tag.getParentTags())
-            if (element.getName().equals(tagName))
-                return element;
-        return null;
+        try {
+            String content = productTag.getNestedTagContent("unitOfMeasure");
+            setUnitOfMeasure(content == null ? null : UnitOfMeasure.valueOf(content));
+        } catch (IllegalArgumentException e) {
+            throw new InvalidTagException(className, "Некорректная единица измерения товара.");
+        }
     }
 
     /**
@@ -144,7 +140,7 @@ public class Product implements Comparable<Product> {
     }
 
     /**
-     * ПРозволяет указать владельца товара.
+     * Позволяет указать владельца товара.
      * @param owner новый владелец (или null).
      */
     public void setOwner(Person owner) {
@@ -243,7 +239,7 @@ public class Product implements Comparable<Product> {
                 s + " Дата создания: " + creationDate.toString().replace("T", "  ") + "\n" +
                 s + " Цена: " + price + "\n" +
                 s + " Единица измерения: " + (unitOfMeasure == null ? "-" : unitOfMeasure) + "\n" +
-                s + " Владелец: " + (owner == null ? "отсутствует" : owner.getName()));
+                s + " Владелец: " + (owner == null ? "отсутствует" : owner.toString()));
     }
 
     /**

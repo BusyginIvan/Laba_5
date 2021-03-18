@@ -1,17 +1,18 @@
 package project.products.product_collection;
 
-import project.products.InvalidTagException;
-import project.products.product.ContainsPassportID;
+import project.ConsoleReader;
+import project.parsing.tags.DuplicateTagException;
+import project.parsing.tags.InvalidTagException;
+import project.products.product.NotUniquePassportIDException;
 import project.products.product.Person;
 import project.products.product.Product;
 import project.parsing.tags.ParentTag;
 import project.parsing.tags.TextTag;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayDeque;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * Класс-обёртка для коллекции товаров. Помимо Коллекции, представленной объектом класса {@link ArrayDeque}, хранит время создания спсика.
@@ -32,45 +33,101 @@ public class ProductCollection implements IProductCollection {
 
     /**
      * Создаёт коллекцию, получая данные из тега.
-     * @param productCollectionTag тег, описывающий коллекцию товаров.
+     * @param productCollectionTag тег с вложенными тегами initializationDate и products.
      * @exception InvalidTagException если тег не содержит необходимых вложенных тегов или в них некорректные данные.
      */
     public ProductCollection(ParentTag productCollectionTag) {
-        date: try {
-            String name = "initializationDate";
-            for (TextTag element : productCollectionTag.getTextTags())
-                if (element.getName().equals(name)) {
-                    setInitializationDate(LocalDate.parse(element.getContent()));
-                    break date;
-                }
-            throw new InvalidTagException(this.getClass(), "Отсутствует тег для поля " + name + ".");
+        try {
+            setInitializationDate(LocalDate.parse(productCollectionTag.getNestedTagContent("initializationDate")));
         } catch (DateTimeParseException e) {
-            throw new InvalidTagException(this.getClass(), "Неверно записана дата инициализации.");
+            throw new InvalidTagException("ProductCollection", "Неверно записана дата инициализации.");
+        } catch (NullPointerException e) {
+            throw new InvalidTagException("ProductCollection", " Отсутствует тег с датой инициализации.");
+        } catch (DuplicateTagException e) {
+            throw new InvalidTagException("ProductCollection", e.getMessage());
         }
 
         products = new ArrayDeque<>();
-        for (ParentTag tagInProductCollection: productCollectionTag.getParentTags())
-            if (tagInProductCollection.getName().equals("products")) {
-                HashSet<ParentTag> tagsWithInvalidOwner = new HashSet<>();
-                for (ParentTag tagInProducts: tagInProductCollection.getParentTags())
-                    if (tagInProducts.getName().equals("product")) {
+        boolean wasIDConflict = false;
+        boolean saveProducts = false;
+        HashSet<String> invalidID = new HashSet<>();
+        HashSet<String> newID = new HashSet<>();
+        ParentTag productsTag;
+        try {
+            productsTag = productCollectionTag.getNestedParentTag("products");
+        } catch (InvalidTagException e) {
+            throw new InvalidTagException("ProductCollection", e.getMessage());
+        }
+        for (ParentTag tagInProducts: productsTag.getParentTags()) {
+            if (tagInProducts.getName().equals("product")) {
+                try {
+                    ParentTag tagOwner = tagInProducts.getNestedParentTag("owner");
+                    if (tagOwner == null)
+                        products.add(new Product(tagInProducts));
+                    else {
                         try {
-                            products.add(new Product(tagInProducts));
-                        } catch (ContainsPassportID e) {
-                            tagsWithInvalidOwner.add(tagInProducts);
-                        } catch (InvalidTagException e) {}
+                            String ID;
+                            if (invalidID.contains((ID = Person.newPerson(tagOwner).getPassportID()))) {
+                                if (Person.lastIsNew())
+                                    Person.removePerson(ID);
+                                if (saveProducts) {
+                                    tagInProducts.removeNestedParentTag("owner");
+                                    products.add(new Product(tagInProducts));
+                                }
+                            } else {
+                                if (Person.lastIsNew())
+                                    newID.add(ID);
+                                products.add(new Product(tagInProducts));
+                            }
+                        } catch (NotUniquePassportIDException e) {
+                            invalidID.add(e.getPassportID());
+
+                            if (!wasIDConflict) {
+                                wasIDConflict = true;
+                                System.out.print("При загрузке товаров в коллекцию из файла, были обнаружены такие," +
+                                        " у которых владельцы имеют совпадающие номера паспортов. Желаете ли вы сохранять" +
+                                        " эти товары (без информации о владельце)? Для подтверждения введите \"ok\": ");
+                                try {
+                                    if (ConsoleReader.readLine().equals("ok"))
+                                        saveProducts = true;
+                                } catch (IOException ioException) {
+                                    ioException.printStackTrace();
+                                }
+                            }
+
+                            if (newID.contains(e.getPassportID()))
+                                Person.removePerson(e.getPassportID());
+                            Iterator<Product> iterator = products.iterator();
+                            if (saveProducts) {
+                                while (iterator.hasNext()) {
+                                    Product product = iterator.next();
+                                    if (product.getOwner() != null && product.getOwner().getPassportID().equals(e.getPassportID()))
+                                        product.setOwner(null);
+                                }
+                                tagInProducts.removeNestedParentTag("owner");
+                                products.add(new Product(tagInProducts));
+                            } else {
+                                while (iterator.hasNext()) {
+                                    Person owner = iterator.next().getOwner();
+                                    if (owner != null && owner.getPassportID().equals(e.getPassportID()))
+                                        iterator.remove();
+                                }
+                            }
+                        }
                     }
-                if (tagsWithInvalidOwner.size() > 0) {
-                    System.out.print("При загрузке товаров в коллекцию из файла, были обнаружены такие, у которых владельцы имеют совпадающие ");
+                } catch (DuplicateTagException e) {
+                    System.out.println("Ошибка в структуре тега product. " + e.getMessage());
+                } catch (InvalidTagException e) {
+                    System.out.println(e.getMessage());
                 }
-                return;
             }
+        }
     }
 
     /**
      * Метод для получения тега, описывающего эту коллекцию.
-     * @return тег productCollection, содержащий теги initializationDate и products, в которых, в свою очередь, содержатся дата
-     * инициализации и теги товаров соответственно.
+     * @return тег productCollection, содержащий теги initializationDate и products, в которых, в свою очередь,
+     * содержатся дата инициализации и теги товаров соответственно.
      */
     public ParentTag getTag() {
         ParentTag productCollectionTag = new ParentTag("productCollection");
@@ -83,9 +140,9 @@ public class ProductCollection implements IProductCollection {
     }
 
     /**
-     * Возвращает продукт в переданным номером или null, если такого нет.
-     * @param id номер (ID) продукта.
-     * @return объект класса {@link Product} или null.
+     * Возвращает товар с переданным номером или null, если такого нет.
+     * @param id номер (ID) товара.
+     * @return ссылка на объект класса {@link Product} или null.
      */
     public Product getProductByID(long id) {
         for (Product product: products) {
@@ -96,8 +153,8 @@ public class ProductCollection implements IProductCollection {
     }
 
     /**
-     * Удаляет продукт с указанным номером.
-     * @param id номер (ID) продукта.
+     * Удаляет товар с указанным номером.
+     * @param id номер (ID) товара.
      * @return true, если такой продукт был и удалён, иначе false.
      */
     public boolean removeProductByID(long id) {
@@ -127,15 +184,6 @@ public class ProductCollection implements IProductCollection {
         return products;
     }
 
-    /*/**
-     * Задать коллекцию товаров.
-     * @param arrayDeque объект коллекции {@link ArrayDeque}.
-     *
-    public void setArrayDeque(@NotNull ArrayDeque<Product> arrayDeque) {
-        if (arrayDeque == null) throw new NullPointerException();
-        this.arrayDeque = arrayDeque;
-    }*/
-
     /**
      * Возвращает дату инициализации.
      * @return объект LocalDate, представляющий дату создания.
@@ -145,7 +193,7 @@ public class ProductCollection implements IProductCollection {
     }
 
     /**
-     * Усталовить дату инициализации.
+     * Устанавливает дату инициализации.
      * @param initializationDate объект LocalDate, представляющий дату создания.
      */
     public void setInitializationDate(LocalDate initializationDate) {
@@ -161,10 +209,13 @@ public class ProductCollection implements IProductCollection {
         return initializationDate.toString();
     }
 
-    /*public void sort() {
-        Product[] products = arrayDeque.toArray(new Product[0]);
-        Arrays.sort(products);
-        arrayDeque.clear();
-        Collections.addAll(arrayDeque, products);
-    }*/
+    /**
+     * Сортирует коллекцию.
+     */
+    public void sort() {
+        Product[] productsArray = products.toArray(new Product[0]);
+        Arrays.sort(productsArray);
+        products.clear();
+        Collections.addAll(products, productsArray);
+    }
 }

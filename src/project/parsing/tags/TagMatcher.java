@@ -21,6 +21,7 @@ public class TagMatcher {
      */
     public TagMatcher(String text) {
         this.text = text;
+        i = 0;
     }
 
     /**
@@ -31,7 +32,7 @@ public class TagMatcher {
         Matcher matcher = beginTagPattern.matcher(text.substring(i));
         if (!matcher.find())
             return false;
-        i = matcher.end();
+        i += matcher.end();
         name = matcher.group("name");
         args = matcher.group("args");
         String beginTagRegex = "<\\s*" + name + "(\\s+\\w+\\s*=\\s*\"[^\"]*\")*\\s*>";
@@ -43,8 +44,8 @@ public class TagMatcher {
             if (matcher.group().matches(beginTagRegex)) n++;
             else n--;
         }
-        content = text.substring(i, matcher.start());
-        i = matcher.end();
+        content = text.substring(i, i + matcher.start());
+        i += matcher.end();
         return true;
     }
 

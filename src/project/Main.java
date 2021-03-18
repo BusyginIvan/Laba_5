@@ -20,7 +20,7 @@ import java.io.IOException;
  * */
 public class Main {
     /**
-     * Загружает список товаров из указанного файла, содержит цикл ввода и исполнения команд.
+     * Обеспечивает загрузку коллекции из файла или создание новой в случае неудачи, содержит цикл ввода и исполнения команд.
      * @param args аргументы командной строки; args[0] - адрес файла, из которого будет осуществляться загрузка коллекции.
      * @exception IOException если была ошибка при чтении подтверждения продолжения работы с новой пустой коллекцией.
      */
@@ -32,16 +32,15 @@ public class Main {
 
         ConsoleReader.init();
 
-        Loader loader = new Loader();
         IProductCollection productCollection = new ProductCollection();
         try {
-            productCollection = loader.load(args[0]);
-            System.out.println("Коллекция загружена из файла.");
+            productCollection = Loader.load(args[0]);
+            System.out.println("\nКоллекция загружена из файла.");
         } catch (LoadException e) {
             System.out.print(e.getMessage() +
                     "\n\nЖелаете ли вы начать работу с новым пустым списком товаров?\n" +
-                    "Для подтверждения введите \"ок\": ");
-            if (!ConsoleReader.readLine().equals("ок"))
+                    "Для подтверждения введите \"ok\": ");
+            if (!ConsoleReader.readLine().equals("ok"))
                 exit();
         }
 
@@ -59,6 +58,9 @@ public class Main {
         }
     }
 
+    /**
+     * Закрывает стандартный поток ввода и завершает работу программы.
+     */
     public static void exit() {
         System.out.println("Завершение работы программы.");
         ConsoleReader.close();
