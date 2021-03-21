@@ -54,6 +54,9 @@ public class Main {
             } catch (CommandException e) {
                 System.out.println(e.getMessage());
                 System.out.println("Повторите ввод команды.");
+            } catch (NullPointerException e) {
+                System.out.println("\n");
+                exit();
             }
         }
     }

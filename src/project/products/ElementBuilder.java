@@ -2,6 +2,7 @@ package project.products;
 
 import com.sun.istack.internal.NotNull;
 import project.ConsoleReader;
+import project.Main;
 import project.products.product.*;
 
 import java.io.IOException;
@@ -21,7 +22,9 @@ public class ElementBuilder {
         System.out.print(invitationToEnter + ": ");
         while (true) {
             try {
-                setter.accept(ConsoleReader.readLine());
+                String line = ConsoleReader.readLine();
+                if (line == null) Main.exit();
+                else setter.accept(line);
                 break;
             } catch (IOException e) {
                 System.out.println("Что-то пошло не так...");
@@ -44,7 +47,9 @@ public class ElementBuilder {
         System.out.print(invitationToEnter + ": ");
         while (true) {
             try {
-                return validator.apply(ConsoleReader.readLine());
+                String line = ConsoleReader.readLine();
+                if (line == null) Main.exit();
+                else return validator.apply(line);
             } catch (IOException e) {
                 System.out.println("Что-то пошло не так.");
             } catch (IllegalArgumentException e) {
