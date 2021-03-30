@@ -26,7 +26,7 @@ public class Add implements ICommand {
      */
     @Override
     public void execute(String[] arguments) {
-                productCollection.getProducts().add(new Product());
+        productCollection.getProducts().add(new Product());
     }
 
     /**

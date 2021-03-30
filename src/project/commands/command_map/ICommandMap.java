@@ -1,6 +1,6 @@
 package project.commands.command_map;
 
-import project.commands.commands.CommandException;
+import project.commands.CommandException;
 
 /**
  * Класс, реализующий этот интерфейс, должен быть способен распознать команду по её строковому представлению и выполнить её.

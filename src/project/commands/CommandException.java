@@ -1,4 +1,4 @@
-package project.commands.commands;
+package project.commands;
 
 /**
  * Исключение при выполнении команды.

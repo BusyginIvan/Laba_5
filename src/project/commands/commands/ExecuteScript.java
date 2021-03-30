@@ -1,5 +1,6 @@
 package project.commands.commands;
 
+import project.commands.CommandException;
 import project.commands.command_map.CommandMap;
 
 import java.io.*;
@@ -11,7 +12,7 @@ import java.io.*;
 public class ExecuteScript implements ICommand {
     CommandMap commandMap;
     private int OpenedScriptsNumber;
-    private final int MaxOpenedScripts = 100;
+    private final int MaxOpenedScripts = 50;
 
     /**
      * Команда будет выполнять команды из переданного в этот конструктор перечня.
@@ -41,6 +42,7 @@ public class ExecuteScript implements ICommand {
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
             String line;
+            System.out.println("Начато выполнение скрипта " + file.getName());
             while (true) {
                 try {
                     if ((line = bufferedReader.readLine()) == null) break;
@@ -58,6 +60,7 @@ public class ExecuteScript implements ICommand {
             System.out.println("Чёт поток не закрылся...");
         }
         OpenedScriptsNumber--;
+        System.out.println("\nЗавершено выполнение скрипта " + file.getName());
     }
 
     /**

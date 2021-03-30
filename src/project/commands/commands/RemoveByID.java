@@ -1,5 +1,6 @@
 package project.commands.commands;
 
+import project.commands.CommandException;
 import project.products.product_collection.IProductCollection;
 
 /**

@@ -1,5 +1,7 @@
 package project.commands.commands;
 
+import project.commands.CommandException;
+
 /**
  * Класс-команда должен обрабатывать аргументы и выполнять действия, краткое описание которых представляет в виде строки.
  * @see project.commands.command_map.ICommandMap

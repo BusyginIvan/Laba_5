@@ -1,7 +1,7 @@
 package project.commands.commands;
 
+import project.commands.CommandException;
 import project.products.ElementBuilder;
-import project.products.product.Product;
 import project.products.product_collection.IProductCollection;
 
 /**

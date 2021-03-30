@@ -1,5 +1,6 @@
 package project.commands.command_map;
 
+import project.commands.CommandException;
 import project.commands.commands.*;
 import project.products.product_collection.IProductCollection;
 import project.parsing.save.ISaver;
@@ -47,9 +48,9 @@ public class CommandMap implements ICommandMap {
      */
     public void execute(String str) throws CommandException {
         System.out.println();
-        String[] words = str.split("\\s+");
-        if (words.length == 0)
+        if (str == null || str.equals(""))
             throw new CommandException("Пустая строка - не команда!");
+        String[] words = str.split("\\s+");
         if (commands.containsKey(words[0])) {
             if (words.length > 1)
                 commands.get(words[0]).execute(Arrays.copyOfRange(words, 1, words.length));

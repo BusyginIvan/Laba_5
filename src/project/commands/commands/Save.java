@@ -1,5 +1,6 @@
 package project.commands.commands;
 
+import project.commands.CommandException;
 import project.products.product_collection.IProductCollection;
 import project.parsing.save.ISaver;
 
@@ -29,12 +30,12 @@ public class Save implements ICommand {
      * @param arguments массив аргументов команды (не имеет значения).
      */
     @Override
-    public void execute(String[] arguments) {
+    public void execute(String[] arguments) throws CommandException {
         try {
             saver.save(productCollection);
             System.out.println("Коллекция сохранена.");
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            throw new CommandException(e.getMessage());
         }
     }
 

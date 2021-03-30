@@ -1,7 +1,7 @@
 package project;
 
 import project.commands.command_map.CommandMap;
-import project.commands.commands.CommandException;
+import project.commands.CommandException;
 import project.products.product_collection.IProductCollection;
 import project.products.product_collection.ProductCollection;
 import project.parsing.load.LoadException;
@@ -54,9 +54,6 @@ public class Main {
             } catch (CommandException e) {
                 System.out.println(e.getMessage());
                 System.out.println("Повторите ввод команды.");
-            } catch (NullPointerException e) {
-                System.out.println("\n");
-                exit();
             }
         }
     }

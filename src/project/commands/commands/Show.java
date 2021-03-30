@@ -3,6 +3,8 @@ package project.commands.commands;
 import project.products.product.Product;
 import project.products.product_collection.IProductCollection;
 
+import java.util.Iterator;
+
 /**
  * Команда плучения информации о каждом товаре списка.
  * @see project.commands.command_map.CommandMap
@@ -28,8 +30,12 @@ public class Show implements ICommand {
             System.out.println("Товаров нет.");
         else {
             System.out.println("Список товаров:");
-            for (Product product: productCollection)
-                product.printInfo(1);
+            Iterator<Product> iterator = productCollection.iterator();
+            iterator.next().printInfo(1);
+            while (iterator.hasNext()) {
+                System.out.println();
+                iterator.next().printInfo(1);
+            }
         }
     }
 

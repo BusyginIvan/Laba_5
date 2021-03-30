@@ -22,10 +22,8 @@ public class ElementBuilder {
         System.out.print(invitationToEnter + ": ");
         while (true) {
             try {
-                String line = ConsoleReader.readLine();
-                if (line == null) Main.exit();
-                else setter.accept(line);
-                break;
+                setter.accept(ConsoleReader.readLine());
+                return;
             } catch (IOException e) {
                 System.out.println("Что-то пошло не так...");
             } catch (NumberFormatException e) {
@@ -47,15 +45,13 @@ public class ElementBuilder {
         System.out.print(invitationToEnter + ": ");
         while (true) {
             try {
-                String line = ConsoleReader.readLine();
-                if (line == null) Main.exit();
-                else return validator.apply(line);
+                return validator.apply(ConsoleReader.readLine());
             } catch (IOException e) {
                 System.out.println("Что-то пошло не так.");
             } catch (IllegalArgumentException e) {
                 System.out.println(e.getMessage());
             }
-            System.out.print(" Попробуйте ещё раз:");
+            System.out.print("Попробуйте ещё раз:");
         }
     }
 }

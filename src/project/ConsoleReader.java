@@ -41,6 +41,11 @@ public class ConsoleReader {
      * @throws IOException ошибка при попытке получения строки из стандартного потока ввода.
      */
     public static String readLine() throws IOException {
-        return new String(bufferedReader.readLine().getBytes(), charset);
+        String line = bufferedReader.readLine();
+        if (line == null) {
+            System.out.println("\n");
+            Main.exit();
+        }
+        return new String(line.getBytes(), charset);
     }
 }
