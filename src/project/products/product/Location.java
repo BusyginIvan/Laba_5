@@ -153,7 +153,7 @@ public class Location {
     /**
      * Проверка на равенсто другой локации.
      * @param o объект некоторого класса для сравнения.
-     * @return true, если значения всех полей совпадают.
+     * @return true, если передан объект класса Location и значения всех полей совпадают.
      */
     @Override
     public boolean equals(Object o) {

@@ -98,4 +98,18 @@ public class Coordinates implements Comparable<Coordinates> {
     public int compareTo(Coordinates coordinates) {
         return (int)(x + y - (coordinates.x + coordinates.y));
     }
+
+    /**
+     * Проверяет, содержит ли другой объект координаты той же точки на плоскости.
+     * @param o объект некоторого класса для сравнения.
+     * @return true, если передан объект класса Coordinates и значения всех полей совпадают.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Coordinates that = (Coordinates) o;
+        return Double.compare(that.y, y) == 0 &&
+                x.equals(that.x);
+    }
 }
